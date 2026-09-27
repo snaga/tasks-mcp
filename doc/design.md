@@ -229,20 +229,21 @@ sequenceDiagram
     participant Storage as ストレージ (.agent/)
     actor User as AIエージェント利用者 (人間)
 
-    Note over Agent, Mcp: 1. タスクリストの初期化
+    Note over Agent, Mcp: 1. タスクリストの初期化 (先頭タスクが自動返却される)
     Agent->>Mcp: tools/call create_task_list([Task1, Task2])
     Mcp->>Storage: アトミック保存 (.agent/tasks.json)
     Mcp->>Storage: ログ追記 (.agent/tasks.log.jsonl)
-    Mcp-->>Agent: 初期化完了 (2件登録)
+    Mcp-->>Agent: 初期化完了 (登録完了 + next_task: Task1)
 
-    Note over Agent, Mcp: 2. 次タスクの取得と着手
-    Agent->>Mcp: tools/call get_next_task()
-    Mcp-->>Agent: Task1 (pending, retry_count: 0)
+    Note over Agent, Mcp: 2. Task1 の着手と完了 (完了時に自動で Task2 が返却される)
     Agent->>Mcp: tools/call update_task_status(Task1, in_progress)
     Mcp->>Guard: 単一アクティブ & 先行依存チェック
     Guard-->>Mcp: 検証パス
     Mcp->>Storage: 状態更新保存 & ログ追記
-    Mcp-->>Agent: 更新成功
+    Mcp-->>Agent: 更新成功 (in_progress)
+    Agent->>Mcp: tools/call update_task_status(Task1, completed)
+    Mcp->>Storage: 状態更新保存 & ログ追記
+    Mcp-->>Agent: 完了成功 + next_task: Task2 (get_next_task 不要！)
 
     Note over Agent, Mcp: 3. スキップ試行のガードレール遮断
     Agent->>Mcp: tools/call update_task_status(Task2, in_progress)
@@ -333,7 +334,14 @@ flowchart LR
   {
     "success": true,
     "task_count": 2,
-    "message": "タスクリストが正常に初期化されました。get_next_task を呼び出して作業を開始してください。"
+    "next_task": {
+      "id": "task-1",
+      "title": "要件の確認とディレクトリ準備",
+      "description": "README を確認して必要な初期構成を整える",
+      "status": "pending",
+      "retry_count": 0
+    },
+    "message": "タスクリストが正常に初期化されました。最初のタスク 'task-1' に着手してください。"
   }
   ```
 
@@ -383,11 +391,20 @@ flowchart LR
   {
     "success": true,
     "task_id": "task-1",
-    "status": "in_progress",
+    "status": "completed",
     "retry_count": 0,
-    "message": "タスクステータスを正常に更新しました。"
+    "next_task": {
+      "id": "task-2",
+      "title": "コアロジックの実装",
+      "description": "モデルおよびガードレールの実装を行う",
+      "status": "pending",
+      "retry_count": 0
+    },
+    "is_all_completed": false,
+    "message": "タスク 'task-1' を完了しました。次のタスク 'task-2' に着手してください。"
   }
   ```
+  *(注: 全タスク完了時は `next_task: null` かつ `is_all_completed: true`、`in_progress` や `failed` への遷移時は `next_task: null` または現在最前のタスクを返却)*
 
 ##### 4. `get_task_summary`
 - **入力 (Input)**: なし（空のパラメータ `{}`）
