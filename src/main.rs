@@ -6,7 +6,7 @@ use tasks_mcp::mcp::{McpServer, ToolsHandler};
 use tasks_mcp::task::{TaskManager, TaskStorage};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-/// CLI 引数定義
+/// CLI arguments definition
 #[derive(Parser, Debug)]
 #[command(
     name = "tasks-mcp",
@@ -14,11 +14,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
     about = "A Model Context Protocol (MCP) server for task management"
 )]
 struct Cli {
-    /// タスク状態ファイルと監査ログの保存先ディレクトリ
+    /// Directory to persist task state files and audit logs
     #[arg(long, default_value = ".agent")]
     storage_dir: PathBuf,
 
-    /// ログレベル (trace, debug, info, warn, error)
+    /// Log level (trace, debug, info, warn, error)
     #[arg(long, default_value = "info")]
     log_level: String,
 }

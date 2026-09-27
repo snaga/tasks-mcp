@@ -31,28 +31,28 @@ impl ToolsHandler {
             "tools": [
                 {
                     "name": "create_task_list",
-                    "description": "順序付きタスクリストの新規初期登録。配列のインデックス順序が暗黙の実行パイプライン順序になります。",
+                    "description": "Initialize and register an ordered task list. The array index order implicitly dictates the sequential execution pipeline.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "tasks": {
                                 "type": "array",
-                                "description": "初期登録するタスク一覧（実行順）",
+                                "description": "Initial list of tasks to register (in execution order)",
                                 "items": {
                                     "type": "object",
                                     "required": ["id", "title", "description"],
                                     "properties": {
                                         "id": {
                                             "type": "string",
-                                            "description": "一意なタスクID"
+                                            "description": "Unique task identifier"
                                         },
                                         "title": {
                                             "type": "string",
-                                            "description": "タスクのタイトル"
+                                            "description": "Task title"
                                         },
                                         "description": {
                                             "type": "string",
-                                            "description": "タスクの詳細説明"
+                                            "description": "Detailed task description"
                                         }
                                     }
                                 }
@@ -63,7 +63,7 @@ impl ToolsHandler {
                 },
                 {
                     "name": "get_next_task",
-                    "description": "次に着手すべき単一タスクを取得します。進行中タスクを最優先し、未完了の最前タスクを返却します。",
+                    "description": "Retrieve the single next task to execute. Prioritizes active in-progress tasks, then returns the foremost pending task.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {}
@@ -71,22 +71,22 @@ impl ToolsHandler {
                 },
                 {
                     "name": "update_task_status",
-                    "description": "タスクステータスの更新および作業メモの記録を行います。ガードレール制約によりスキップや同時進行は自動遮断されます。",
+                    "description": "Update task status and record work notes. Guardrail rules automatically block skip attempts and concurrent active tasks.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "id": {
                                 "type": "string",
-                                "description": "対象タスクID"
+                                "description": "Target task ID"
                             },
                             "status": {
                                 "type": "string",
                                 "enum": ["pending", "in_progress", "completed", "failed"],
-                                "description": "更新先ステータス"
+                                "description": "New status to transition to"
                             },
                             "notes": {
                                 "type": "string",
-                                "description": "作業メモ・履歴（任意）"
+                                "description": "Optional work notes or history"
                             }
                         },
                         "required": ["id", "status"]
@@ -94,7 +94,7 @@ impl ToolsHandler {
                 },
                 {
                     "name": "get_task_summary",
-                    "description": "タスク全体の進捗サマリー（完了率、現在進行中タスク、残りタスク数）を取得します。",
+                    "description": "Retrieve comprehensive task progress summary (progress percent, current active task, remaining count).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {}
