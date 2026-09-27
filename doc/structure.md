@@ -40,9 +40,9 @@
 ## 🏷️ 命名規則
 - **ファイル名**: `snake_case.rs`（Rust 標準規約に準拠）
 - **型名・構造体・Enum**: `PascalCase`（例: `Task`, `TaskStatus`, `GuardrailViolation`）
-- **関数名・メソッド名・変数名**: `snake_case`（例: `get_current_task`, `validate_dependencies`）
+- **関数名・メソッド名・変数名**: `snake_case`（例: `get_next_task`, `validate_dependencies`）
 - **定数名**: `SCREAMING_SNAKE_CASE`（例: `DEFAULT_STORAGE_PATH`）
-- **MCP ツール名**: `snake_case`（例: `init_task_list`, `get_current_task`, `update_task_status`, `get_task_summary`）
+- **MCP ツール名**: `snake_case`（例: `create_task_list`, `get_next_task`, `update_task_status`, `get_task_summary`）
 
 ## 🏗️ アーキテクチャの方針
 - **レイヤード ＆ ドメイン分離**:
