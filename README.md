@@ -52,8 +52,8 @@ flowchart TD
 ## 🌟 主な特徴 (Features)
 
 - **迷わせない極小ツールセット**: `create_task_list`, `get_next_task`, `update_task_status`, `get_task_summary` の4つのみ。
-- **透明性のあるローカル永続化**: 状態はすべて `.agent/tasks.json` にアトミック保存。DBを排し、人間がエディタで直接確認・手動修正が可能。
-- **追記専用 JSONL 監査ログ**: `.agent/tasks.log.jsonl` にすべてのツール呼び出し、実行時間、ガードレール判定、ステータス変更履歴をリアルタイム記録。
+- **透明性のあるローカル永続化**: 状態はすべて `.agents/tasks.json` にアトミック保存。DBを排し、人間がエディタで直接確認・手動修正が可能。
+- **追記専用 JSONL 監査ログ**: `.agents/tasks.log.jsonl` にすべてのツール呼び出し、実行時間、ガードレール判定、ステータス変更履歴をリアルタイム記録。
 - **stdio 通信完全保護**: トレースログはすべて `stderr` に出力され、MCP JSON-RPC プロトコルが流れる `stdout` を一切汚しません。
 - **ゼロ外部依存・爆速ネイティブバイナリ**: Rust で実装され、Node.js や Python ランタイム不要の単一バイナリ（約2.2MB）。
 
@@ -88,7 +88,7 @@ cargo build --release
     "tasks": {
       "command": "C:\\Users\\<YourUsername>\\dev\\tasks-mcp\\target\\release\\tasks-mcp.exe",
       "args": [
-        "--storage-dir", ".agent",
+        "--storage-dir", ".agents",
         "--log-level", "info"
       ]
     }
@@ -105,7 +105,7 @@ cargo build --release
   "mcpServers": {
     "tasks": {
       "command": "/path/to/tasks-mcp",
-      "args": ["--storage-dir", ".agent"]
+      "args": ["--storage-dir", ".agents"]
     }
   }
 }
@@ -119,7 +119,7 @@ cargo build --release
 Usage: tasks-mcp.exe [OPTIONS]
 
 Options:
-      --storage-dir <STORAGE_DIR>  Directory to persist task state files and audit logs [default: .agent]
+      --storage-dir <STORAGE_DIR>  Directory to persist task state files and audit logs [default: .agents]
       --log-level <LOG_LEVEL>      Log level (trace, debug, info, warn, error) [default: info]
   -h, --help                       Print help
   -V, --version                    Print version
@@ -243,7 +243,7 @@ Options:
 同一タスクで 3 回連続して `failed` 状態になると、サーキットブレーカーが作動して `is_blocked: true` となり、エージェントの自律実行が中断されます。
 
 ### 復旧手順 (Recovery Steps)
-1. 人間（開発者）がプロジェクト直下の `.agent/tasks.json` を任意のエディタで開きます。
+1. 人間（開発者）がプロジェクト直下の `.agents/tasks.json` を任意のエディタで開きます。
 2. 該当タスクの状況を確認し、必要に応じて手動でコードを修正するか、タスクの `status` を `"completed"` または `"pending"`（`retry_count: 0`）に直接書き換えて保存します。
 3. エージェントに「手動修正したので再開してください」と指示すると、エージェントが `get_next_task` を呼び出してパイプラインが自動再開されます。
 
@@ -251,7 +251,7 @@ Options:
 
 ## 🔍 監査ログの確認 (`tasks.log.jsonl`)
 
-すべてのツール呼び出しおよびガードレール違反は `.agent/tasks.log.jsonl` にリアルタイムで記録されます。
+すべてのツール呼び出しおよびガードレール違反は `.agents/tasks.log.jsonl` にリアルタイムで記録されます。
 
 ```jsonl
 {"timestamp":"2026-09-27T02:50:53Z","event_type":"tool_call","tool_name":"create_task_list","input":{"tasks":[...]},"output":{"success":true},"duration_ms":2}

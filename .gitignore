@@ -6,6 +6,7 @@
 AGENTS.md
 GEMINI.md
 /.agent/
+/.agents/
 /.gemini/
 /.claude/
 /.workspace_cache/

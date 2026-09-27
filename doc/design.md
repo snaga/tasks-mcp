@@ -39,8 +39,8 @@
 | **ガードレール & 制御** | F-B4 | ステータス遷移 & メモ記録 | 許可された遷移のみを受理し、実行メモを追記する | 要件 B-4 |
 | **ガードレール & 制御** | F-B5 | サーキットブレーカー (実行中断) | 同一タスク3回失敗時に自動中断し人間に判断を委託する | 要件 B-5 |
 | **可視化 & 永続化** | F-C1 | 全体進捗サマリー出力 | 完了率、現在タスク、残りタスクを整形して出力する | 要件 C-1 |
-| **可視化 & 永続化** | F-C2 | ローカルJSONアトミック保存 | `.agent/tasks.json` に安全にアトミック書き込みする | 要件 C-2 |
-| **可視化 & 永続化** | F-C3 | 監査用JSONLイベントログ出力 | ツール引数・結果・制約違反を `.agent/tasks.log.jsonl` に追記する | 要件 C-3 |
+| **可視化 & 永続化** | F-C2 | ローカルJSONアトミック保存 | `.agentss/tasks.json` に安全にアトミック書き込みする | 要件 C-2 |
+| **可視化 & 永続化** | F-C3 | 監査用JSONLイベントログ出力 | ツール引数・結果・制約違反を `.agentss/tasks.log.jsonl` に追記する | 要件 C-3 |
 | **MCP基盤** | F-D1 | stdio JSON-RPC 2.0 通信 | MCP標準stdioトランスポートでクライアントと対話する | 要件 D-1 |
 | **MCP基盤** | F-D2 | stdout保護 & stderrロギング | stdoutをJSON-RPCに専有させ、ログはstderrに限定出力する | 要件 D-2 |
 
@@ -100,7 +100,7 @@
   - **設計のポイント**:
     - ステータスが `failed` になるたびに `retry_count` を `+1`。
     - `retry_count >= 3` に達した場合、タスク状態を自動的に `blocked` へ遷移させ、パイプライン全体を停止する。
-    - 人間が `.agent/tasks.json` を直接編集して `retry_count` をリセットするか `completed` に変更することで復旧可能。
+    - 人間が `.agentss/tasks.json` を直接編集して `retry_count` をリセットするか `completed` に変更することで復旧可能。
 
 ### 2.3 機能カテゴリC: 進捗可視化 & ローカル透過永続化・ログ
 
@@ -111,13 +111,13 @@
     - エージェントが現在の進捗状況を一目で把握できるプレーンテキスト表現と構造化オブジェクトを併せて提供。
 
 - **F-C2: ローカルJSONアトミック保存**
-  - **概要**: タスク状態変更時に `.agent/tasks.json` へ安全に書き出す。
+  - **概要**: タスク状態変更時に `.agentss/tasks.json` へ安全に書き出す。
   - **対応要件**: 要件 C-2
   - **設計のポイント**:
-    - 同一ディレクトリ内に一時ファイル（`.agent/tasks.json.tmp.XXXX`）を作成して書き出し・fsync 後にリネーム（置換）するアトミック書き込み（Write-Replace）を採用。電源断やプロセスキル時でもファイル破損を防止。
+    - 同一ディレクトリ内に一時ファイル（`.agentss/tasks.json.tmp.XXXX`）を作成して書き出し・fsync 後にリネーム（置換）するアトミック書き込み（Write-Replace）を採用。電源断やプロセスキル時でもファイル破損を防止。
 
 - **F-C3: 監査用JSONLイベントログ出力**
-  - **概要**: ツール呼び出し、引数、戻り値、所要時間、ガードレール判定イベントを `.agent/tasks.log.jsonl` にリアルタイム追記。
+  - **概要**: ツール呼び出し、引数、戻り値、所要時間、ガードレール判定イベントを `.agentss/tasks.log.jsonl` にリアルタイム追記。
   - **対応要件**: 要件 C-3
   - **設計のポイント**:
     - 追記専用（Append-only）モードでファイルを開き、JSON行をフラッシュ出力。デバッグやエージェントの行動分析を容易にする。
@@ -145,7 +145,7 @@
 1. **ガードレールファースト (Harness-as-Guardrail)**:
    - モデルの自律的判断に頼らず、サーバー側の検証関数が絶対的な制約として振る舞う。制約違反時は Fail-Fast で明確なガイダンスエラーを返す。
 2. **ローカル透過性 ＆ 監査性 (Local Transparency & Auditability)**:
-   - 内部状態はすべて `.agent/tasks.json`（現在状態）と `.agent/tasks.log.jsonl`（履歴ログ）という可読性の高いプレーンテキストに永続化し、Git 差分追跡と人間による直接修正を可能にする。
+   - 内部状態はすべて `.agentss/tasks.json`（現在状態）と `.agentss/tasks.log.jsonl`（履歴ログ）という可読性の高いプレーンテキストに永続化し、Git 差分追跡と人間による直接修正を可能にする。
 3. **ゼロ外部依存 ＆ 単一バイナリ (Zero External Dependencies)**:
    - Node.js や Python 等のランタイムを一切不要とし、Rust 製の軽量・高速なネイティブ単一バイナリとして配布・実行する。
 4. **プロトコル境界の疎結合 (6ヶ月テスト検証済み)**:
@@ -182,9 +182,9 @@ graph TD
         end
     end
 
-    subgraph LocalFS["ローカルファイルシステム (.agent/)"]
-        TasksJson[".agent/tasks.json (現在状態)"]
-        TasksLog[".agent/tasks.log.jsonl (監査ログ)"]
+    subgraph LocalFS["ローカルファイルシステム (.agentss/)"]
+        TasksJson[".agentss/tasks.json (現在状態)"]
+        TasksLog[".agentss/tasks.log.jsonl (監査ログ)"]
     end
 
     subgraph Operator["人間アクター"]
@@ -226,13 +226,13 @@ sequenceDiagram
     actor Agent as AIエージェント
     participant Mcp as tasks-mcp (Server)
     participant Guard as ガードレール判定
-    participant Storage as ストレージ (.agent/)
+    participant Storage as ストレージ (.agentss/)
     actor User as AIエージェント利用者 (人間)
 
     Note over Agent, Mcp: 1. タスクリストの初期化 (先頭タスクが自動返却される)
     Agent->>Mcp: tools/call create_task_list([Task1, Task2])
-    Mcp->>Storage: アトミック保存 (.agent/tasks.json)
-    Mcp->>Storage: ログ追記 (.agent/tasks.log.jsonl)
+    Mcp->>Storage: アトミック保存 (.agentss/tasks.json)
+    Mcp->>Storage: ログ追記 (.agentss/tasks.log.jsonl)
     Mcp-->>Agent: 初期化完了 (登録完了 + next_task: Task1)
 
     Note over Agent, Mcp: 2. Task1 の着手と完了 (完了時に自動で Task2 が返却される)
@@ -264,7 +264,7 @@ sequenceDiagram
 
     Note over Agent, User: 5. エージェント停止 & 人間による介入
     Agent->>User: 「Task1 で3回失敗したため停止しました。助けてください」
-    User->>Storage: .agent/tasks.json を手動修正 (Task1 を completed に変更)
+    User->>Storage: .agentss/tasks.json を手動修正 (Task1 を completed に変更)
     Agent->>Mcp: tools/call get_next_task()
     Mcp-->>Agent: Task2 (pending)
 ```
@@ -282,9 +282,9 @@ flowchart LR
     E --> F["JSON-RPC エラー返却"]
 
     C -- 合格 --> G["ドメイン状態更新<br/>(Task / TaskList)"]
-    G --> H["一時ファイル書き出し<br/>(.agent/tasks.json.tmp)"]
-    H --> I["アトミックリネーム<br/>(.agent/tasks.json)"]
-    I --> J["JSONL 正常イベント追記<br/>(.agent/tasks.log.jsonl)"]
+    G --> H["一時ファイル書き出し<br/>(.agentss/tasks.json.tmp)"]
+    H --> I["アトミックリネーム<br/>(.agentss/tasks.json)"]
+    I --> J["JSONL 正常イベント追記<br/>(.agentss/tasks.log.jsonl)"]
     J --> K["JSON-RPC 正常レスポンス返却"]
 ```
 
@@ -328,7 +328,7 @@ flowchart LR
 - **処理概要 (Processing)**:
   1. タスク配列が空でないか、ID に重複がないかを検証。
   2. 各タスクのステータスを `pending`、`retry_count` を `0` として `TaskList` を生成。
-  3. `.agent/tasks.json` にアトミック保存し、`.agent/tasks.log.jsonl` に登録イベントを記録。
+  3. `.agentss/tasks.json` にアトミック保存し、`.agentss/tasks.log.jsonl` に登録イベントを記録。
 - **出力 (Output)**:
   ```json
   {
@@ -385,7 +385,7 @@ flowchart LR
      - `in_progress` への変更時: 他に `in_progress` がないか、直前の先行タスクがすべて `completed` かを検証。
      - `completed` への変更時: 直前の先行タスクがすべて `completed` かを検証。
      - `failed` への変更時: 当該タスクの `retry_count` を `+1`。`retry_count >= 3` の場合はステータスを自動的に `blocked` に更新。
-  3. メモ履歴を追加し、`.agent/tasks.json` へ保存、`.agent/tasks.log.jsonl` へ記録。
+  3. メモ履歴を追加し、`.agentss/tasks.json` へ保存、`.agentss/tasks.log.jsonl` へ記録。
 - **出力 (Output)**:
   ```json
   {
@@ -428,9 +428,9 @@ flowchart LR
 
 ### 4.2 データ永続化仕様
 
-#### 1. `.agent/tasks.json` (現在状態永続化スキーマ)
+#### 1. `.agentss/tasks.json` (現在状態永続化スキーマ)
 - **形式**: UTF-8 JSON、インデント整形 (Pretty-printed)
-- **ファイルパス**: `{project_root}/.agent/tasks.json`
+- **ファイルパス**: `{project_root}/.agentss/tasks.json`
 - **スキーマ定義**:
   ```json
   {
@@ -470,9 +470,9 @@ flowchart LR
   }
   ```
 
-#### 2. `.agent/tasks.log.jsonl` (監査ログ追記スキーマ)
+#### 2. `.agentss/tasks.log.jsonl` (監査ログ追記スキーマ)
 - **形式**: UTF-8 JSON Lines (1行1JSON)、追記保存 (Append-only)
-- **ファイルパス**: `{project_root}/.agent/tasks.log.jsonl`
+- **ファイルパス**: `{project_root}/.agentss/tasks.log.jsonl`
 - **1行あたりのレコード定義**:
   ```json
   {
@@ -607,11 +607,11 @@ classDiagram
 #### 3. `src/task/storage.rs` (ストレージ & アトミック操作)
 - **`TaskStorage` 構造体**:
   - `save_atomic(&self, list: &TaskList) -> Result<()>`:
-    1. `.agent` ディレクトリが存在しない場合は自動作成 (`create_dir_all`)。
+    1. `.agents` ディレクトリが存在しない場合は自動作成 (`create_dir_all`)。
     2. 同一階層にテンポラリファイルを作成し、JSON Pretty で書き出し。
     3. `std::fs::rename` によるアトミック置換。
   - `append_log(&self, entry: &LogEntry) -> Result<()>`:
-    1. `.agent/tasks.log.jsonl` を `OpenOptions::new().create(true).append(true)` でオープン。
+    1. `.agentss/tasks.log.jsonl` を `OpenOptions::new().create(true).append(true)` でオープン。
     2. JSON 文字列 + `\n` を安全に追記。
 
 ### 5.3 IPO 一覧表
@@ -646,7 +646,7 @@ stateDiagram-v2
     Failed --> InProgress : update(in_progress)<br/>[リトライ再試行]
     Failed --> Blocked : retry_count >= 3<br/>[⚡ サーキットブレーカー作動]
 
-    Blocked --> Completed : 人間による手動修正 (.agent/tasks.json)
+    Blocked --> Completed : 人間による手動修正 (.agentss/tasks.json)
     Blocked --> InProgress : 人間による手動リセット (retry_count=0)
 
     Completed --> [*] : 後続タスクへ
@@ -704,7 +704,7 @@ stateDiagram-v2
      --method tools/call --tool-name create_task_list \
      --tool-arg tasks='[{"id":"t1","title":"タスク1","description":"テスト1"},{"id":"t2","title":"タスク2","description":"テスト2"}]'
    ```
-   - 期待結果: 成功レスポンスが返り、`.agent/tasks.json` と `.agent/tasks.log.jsonl` が生成されること。
+   - 期待結果: 成功レスポンスが返り、`.agentss/tasks.json` と `.agentss/tasks.log.jsonl` が生成されること。
 
 4. **ガードレール遮断の検証 (スキップ試行)**:
    ```bash
@@ -712,4 +712,4 @@ stateDiagram-v2
      --method tools/call --tool-name update_task_status \
      --tool-arg id=t2 --tool-arg status=in_progress
    ```
-   - 期待結果: ガードレール違反エラー（PredecessorNotCompleted）が返り、`.agent/tasks.log.jsonl` に違反イベントが記録されること。
+   - 期待結果: ガードレール違反エラー（PredecessorNotCompleted）が返り、`.agentss/tasks.log.jsonl` に違反イベントが記録されること。

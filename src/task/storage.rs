@@ -75,7 +75,7 @@ impl LogEntry {
 /// タスク永続化ストレージ
 #[derive(Debug, Clone)]
 pub struct TaskStorage {
-    /// 保存先ディレクトリのパス（例: `.agent/`）
+    /// 保存先ディレクトリのパス（例: `.agents/`）
     base_dir: PathBuf,
 }
 

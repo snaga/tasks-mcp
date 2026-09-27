@@ -15,7 +15,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 )]
 struct Cli {
     /// Directory to persist task state files and audit logs
-    #[arg(long, default_value = ".agent")]
+    #[arg(long, default_value = ".agents")]
     storage_dir: PathBuf,
 
     /// Log level (trace, debug, info, warn, error)
