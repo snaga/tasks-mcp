@@ -17,6 +17,7 @@
 │   └── task/               # タスク管理・ガードレールコア層
 │       ├── mod.rs          # タスクモジュール公開
 │       ├── model.rs        # Task, TaskList, TaskStatus 等の型定義
+│       ├── manager.rs      # タスクオーケストレーション・進捗管理
 │       ├── guardrail.rs    # シングルアクティブ制約・依存関係バリデーション
 │       └── storage.rs      # .agent/tasks.json 読み書き・アトミック永続化
 ├── tests/                  # 統合テスト・ガードレール検証
