@@ -1,0 +1,31 @@
+# Rust ビルド成果物
+/target/
+**/*.rs.bk
+
+# AI エージェント & プライベート設定
+AGENTS.md
+GEMINI.md
+/.agent/
+/.gemini/
+/.claude/
+
+# 非公開開発作業領域
+/doc_internal/
+
+# 秘密情報・環境変数
+.env
+credentials.json
+token.json
+
+# OS・エディタ設定
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# テスト・カバレッジ出力
+coverage/
+*.out
+cov*
