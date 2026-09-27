@@ -2,7 +2,7 @@
 
 [![Rust](https://img.shields.io/badge/Rust-2021-orange.svg)](https://www.rust-lang.org/)
 [![MCP](https://img.shields.io/badge/MCP-2024--11--05-blue.svg)](https://modelcontextprotocol.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 > **「モデルの賢さ」に過度に依存せず、外部環境（ハーネス）側で状態と制約を担保する。**  
 > 軽量モデルでも迷子にならず、スキップや勝手な完了を物理的に遮断して決定論的にタスクを完遂させる Rust 製 Model Context Protocol (MCP) サーバー。
@@ -284,3 +284,11 @@ cargo clippy --all-targets -- -D warnings
 - [`doc/structure.md`](doc/structure.md): ディレクトリ構成
 - [`doc/requirements.md`](doc/requirements.md): EARS記法による要求仕様（全12要件）
 - [`doc/design.md`](doc/design.md): 詳細アーキテクチャ・状態遷移・IPO設計
+
+---
+
+## 📄 ライセンス (License)
+
+本プロジェクトは **[Apache License, Version 2.0](LICENSE)** の下で公開されています。
+商用・非商用を問わず、許諾条件に従って自由にご利用・改変・再配布いただけます。
+詳細は [`LICENSE`](LICENSE) ファイルをご確認ください。
