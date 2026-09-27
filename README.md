@@ -17,20 +17,23 @@
 
 ```mermaid
 flowchart TD
-    Start([タスク開始]) --> Create[1. create_task_list: 全体計画を配列順に登録]
-    Create --> LoopStart[2. get_next_task: 次に着手すべきタスクを取得]
-    LoopStart --> CheckBlocked{is_blocked?}
-    CheckBlocked -- Yes --> Halt([実行中断: ユーザーに報告して指示を仰ぐ])
-    CheckBlocked -- No --> CheckDone{is_all_completed?}
-    CheckDone -- Yes --> Finish([全タスク完了: ユーザーに完了報告])
-    CheckDone -- No --> StartTask[3. update_task_status: status='in_progress']
+    Start([タスク開始]) --> Create[1. create_task_list: 全体計画を配列順に登録<br/>👉 最初のタスク next_task が自動返却！]
+    Create --> StartTask[2. update_task_status: status='in_progress']
     StartTask --> Work[コード作成・編集・テスト実行]
     Work --> Success{作業成功?}
-    Success -- Yes --> CompleteTask[4. update_task_status: status='completed', notes='...']
-    CompleteTask --> LoopStart
+    Success -- Yes --> CompleteTask[3. update_task_status: status='completed', notes='...'<br/>👉 次のタスク next_task が自動返却！]
+    CompleteTask --> CheckDone{is_all_completed?}
+    CheckDone -- Yes --> Finish([全タスク完了: ユーザーに完了報告])
+    CheckDone -- No --> StartTask
     Success -- No --> FailTask[update_task_status: status='failed', notes='エラー詳細']
-    FailTask --> LoopStart
+    FailTask --> CheckBlocked{is_blocked?}
+    CheckBlocked -- Yes --> Halt([実行中断: 3回失敗のためユーザーに報告して指示を仰ぐ])
+    CheckBlocked -- No --> StartTask
 ```
+
+> **💡 ゼロ・エクストラターン設計**:
+> `create_task_list` やタスク完了時の `update_task_status` のレスポンスに、次に着手すべき `next_task` が自動で含まれるため、**`get_next_task` を呼ぶための推論＆ツール呼び出し往復（ターン）が丸ごと不要** になりました！
+> （※ `get_next_task` は作業再開時や現在状態の確認用としていつでも呼び出し可能です）
 
 ### ⚡ ガードレール制約 (Guardrail Constraints)
 サーバー側で以下の物理制約が強制されます。違反した場合は `isError: true` と自己修正ガイダンスメッセージが返却されます。
@@ -147,6 +150,22 @@ Options:
 }
 ```
 
+**戻り値の例**:
+```json
+{
+  "success": true,
+  "task_count": 2,
+  "next_task": {
+    "id": "task-1",
+    "title": "要件確認と設計",
+    "description": "仕様書を確認して設計方針を固める",
+    "status": "pending",
+    "retry_count": 0
+  },
+  "message": "タスクリストが正常に初期化されました。最初のタスク 'task-1' に着手してください。"
+}
+```
+
 ### 2. `get_next_task`
 次に着手すべき単一のタスクを取得します。進行中（`in_progress`）のタスクがあればそれを最優先で返し、なければ未完了の先頭タスク（`pending`）を返します。
 
@@ -171,12 +190,31 @@ Options:
 ```
 
 ### 3. `update_task_status`
-タスクのステータス更新および作業メモの記録を行います。ガードレール制約に違反した場合は物理的に遮断されエラーが返ります。
+タスクのステータス更新および作業メモの記録を行います。タスクを `completed` に更新した際は、次に着手すべき `next_task` が自動返却されます。ガードレール制約に違反した場合は物理的に遮断されエラーが返ります。
 
 **引数**:
 - `id` (string, 必須): 更新対象のタスクID
 - `status` (string, 必須): `"pending" | "in_progress" | "completed" | "failed"`
 - `notes` (string, 任意): 作業メモ・エラー履歴
+
+**戻り値の例 (タスク完了時)**:
+```json
+{
+  "success": true,
+  "task_id": "task-1",
+  "status": "completed",
+  "retry_count": 0,
+  "next_task": {
+    "id": "task-2",
+    "title": "実装",
+    "description": "コアロジックを実装する",
+    "status": "pending",
+    "retry_count": 0
+  },
+  "is_all_completed": false,
+  "message": "タスク 'task-1' を完了しました。次のタスク 'task-2' に着手してください。"
+}
+```
 
 ### 4. `get_task_summary`
 全体の進捗サマリーを取得します。

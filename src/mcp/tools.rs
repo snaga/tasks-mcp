@@ -132,10 +132,20 @@ impl ToolsHandler {
 
         let list = self.manager.create_task_list(items)?;
 
+        let next_task = list.tasks.first().cloned();
+        let message = match &next_task {
+            Some(t) => format!(
+                "タスクリストが正常に初期化されました。最初のタスク '{}' に着手してください。",
+                t.id
+            ),
+            None => "タスクリストが正常に初期化されました。".to_string(),
+        };
+
         Ok(json!({
             "success": true,
             "task_count": list.tasks.len(),
-            "message": "タスクリストが正常に初期化されました。get_next_task を呼び出して作業を開始してください。"
+            "next_task": next_task,
+            "message": message
         }))
     }
 
@@ -164,14 +174,31 @@ impl ToolsHandler {
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
-        let updated = self.manager.update_task_status(id, status, notes)?;
+        let res = self.manager.update_task_status(id, status, notes)?;
+
+        let message = if res.is_all_completed {
+            "全タスクが完了しました！お疲れ様でした。".to_string()
+        } else if status == TaskStatus::Completed {
+            if let Some(ref next) = res.next_task {
+                format!(
+                    "タスク '{}' を完了しました。次のタスク '{}' に着手してください。",
+                    id, next.id
+                )
+            } else {
+                "タスクステータスを正常に更新しました。".to_string()
+            }
+        } else {
+            "タスクステータスを正常に更新しました。".to_string()
+        };
 
         Ok(json!({
             "success": true,
-            "task_id": updated.id,
-            "status": updated.status,
-            "retry_count": updated.retry_count,
-            "message": "タスクステータスを正常に更新しました。"
+            "task_id": res.task.id,
+            "status": res.task.status,
+            "retry_count": res.task.retry_count,
+            "next_task": res.next_task,
+            "is_all_completed": res.is_all_completed,
+            "message": message
         }))
     }
 
@@ -225,6 +252,11 @@ mod tests {
         let res_create = handler.call_tool("create_task_list", create_args).unwrap();
         assert_eq!(res_create["success"], true);
         assert_eq!(res_create["task_count"], 2);
+        assert_eq!(res_create["next_task"]["id"], "t1");
+        assert!(res_create["message"]
+            .as_str()
+            .unwrap()
+            .contains("最初のタスク 't1' に着手してください。"));
 
         // 2. get_next_task -> t1
         let res_next = handler.call_tool("get_next_task", json!({})).unwrap();
@@ -256,9 +288,11 @@ mod tests {
             .unwrap();
         assert_eq!(res_update1["success"], true);
         assert_eq!(res_update1["status"], "in_progress");
+        assert_eq!(res_update1["next_task"]["id"], "t1");
+        assert_eq!(res_update1["is_all_completed"], false);
 
         // 5. t1 を completed に更新
-        handler
+        let res_update2 = handler
             .call_tool(
                 "update_task_status",
                 json!({
@@ -268,6 +302,14 @@ mod tests {
                 }),
             )
             .unwrap();
+        assert_eq!(res_update2["success"], true);
+        assert_eq!(res_update2["status"], "completed");
+        assert_eq!(res_update2["next_task"]["id"], "t2");
+        assert_eq!(res_update2["is_all_completed"], false);
+        assert!(res_update2["message"]
+            .as_str()
+            .unwrap()
+            .contains("次のタスク 't2' に着手してください。"));
 
         // 6. get_task_summary
         let res_summary = handler.call_tool("get_task_summary", json!({})).unwrap();

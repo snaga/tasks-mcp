@@ -60,12 +60,16 @@ fn test_scenario_linear_pipeline_happy_path() {
     let t1_ip = manager
         .update_task_status("t1", TaskStatus::InProgress, Some("t1 開始".to_string()))
         .unwrap();
-    assert_eq!(t1_ip.status, TaskStatus::InProgress);
+    assert_eq!(t1_ip.task.status, TaskStatus::InProgress);
+    assert_eq!(t1_ip.next_task.as_ref().unwrap().id, "t1");
+    assert!(!t1_ip.is_all_completed);
 
     let t1_comp = manager
         .update_task_status("t1", TaskStatus::Completed, Some("t1 完了".to_string()))
         .unwrap();
-    assert_eq!(t1_comp.status, TaskStatus::Completed);
+    assert_eq!(t1_comp.task.status, TaskStatus::Completed);
+    assert_eq!(t1_comp.next_task.as_ref().unwrap().id, "t2");
+    assert!(!t1_comp.is_all_completed);
 
     // 4. get_next_task -> t2 (pending)
     let next2 = manager.get_next_task().unwrap();
@@ -76,9 +80,12 @@ fn test_scenario_linear_pipeline_happy_path() {
     manager
         .update_task_status("t2", TaskStatus::InProgress, Some("t2 開始".to_string()))
         .unwrap();
-    manager
+    let t2_comp = manager
         .update_task_status("t2", TaskStatus::Completed, Some("t2 完了".to_string()))
         .unwrap();
+    assert_eq!(t2_comp.task.status, TaskStatus::Completed);
+    assert_eq!(t2_comp.next_task.as_ref().unwrap().id, "t3");
+    assert!(!t2_comp.is_all_completed);
 
     // 6. get_next_task -> t3 (pending)
     let next3 = manager.get_next_task().unwrap();
@@ -89,9 +96,12 @@ fn test_scenario_linear_pipeline_happy_path() {
     manager
         .update_task_status("t3", TaskStatus::InProgress, Some("t3 開始".to_string()))
         .unwrap();
-    manager
+    let t3_comp = manager
         .update_task_status("t3", TaskStatus::Completed, Some("t3 完了".to_string()))
         .unwrap();
+    assert_eq!(t3_comp.task.status, TaskStatus::Completed);
+    assert!(t3_comp.next_task.is_none());
+    assert!(t3_comp.is_all_completed);
 
     // 8. get_next_task -> is_all_completed: true
     let next_final = manager.get_next_task().unwrap();
@@ -233,22 +243,22 @@ fn test_scenario_circuit_breaker_and_human_recovery() {
     let f1 = manager
         .update_task_status("t1", TaskStatus::Failed, Some("ビルド失敗 1回目".to_string()))
         .unwrap();
-    assert_eq!(f1.status, TaskStatus::Failed);
-    assert_eq!(f1.retry_count, 1);
+    assert_eq!(f1.task.status, TaskStatus::Failed);
+    assert_eq!(f1.task.retry_count, 1);
 
     // 2回目の失敗
     let f2 = manager
         .update_task_status("t1", TaskStatus::Failed, Some("テスト失敗 2回目".to_string()))
         .unwrap();
-    assert_eq!(f2.status, TaskStatus::Failed);
-    assert_eq!(f2.retry_count, 2);
+    assert_eq!(f2.task.status, TaskStatus::Failed);
+    assert_eq!(f2.task.retry_count, 2);
 
     // 3回目の失敗 -> 自動的に Blocked (サーキットブレーカー発動)
     let f3 = manager
         .update_task_status("t1", TaskStatus::Failed, Some("再試行失敗 3回目".to_string()))
         .unwrap();
-    assert_eq!(f3.status, TaskStatus::Blocked);
-    assert_eq!(f3.retry_count, 3);
+    assert_eq!(f3.task.status, TaskStatus::Blocked);
+    assert_eq!(f3.task.retry_count, 3);
 
     // get_next_task で is_blocked: true が報告される
     let next = manager.get_next_task().unwrap();

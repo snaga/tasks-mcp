@@ -15,7 +15,7 @@ pub use guardrail::{
     MAX_RETRY_COUNT,
 };
 pub use manager::{
-    NextTaskResponse, TaskCreateInput, TaskManager, TaskStatusItem, TaskSummary,
+    NextTaskResponse, TaskCreateInput, TaskManager, TaskStatusItem, TaskSummary, UpdateTaskResponse,
 };
 pub use model::{Task, TaskHistoryEntry, TaskList, TaskStatus};
 pub use storage::{LogEntry, TaskStorage};

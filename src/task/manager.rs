@@ -40,6 +40,17 @@ pub struct NextTaskResponse {
     pub completed_tasks: usize,
 }
 
+/// タスク更新のレスポンス
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateTaskResponse {
+    /// 更新されたタスク
+    pub task: Task,
+    /// 次に着手すべきタスク（全完了または候補なし時は None）
+    pub next_task: Option<Task>,
+    /// 全タスク完了フラグ
+    pub is_all_completed: bool,
+}
+
 /// タスクステータスサマリー項目
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskStatusItem {
@@ -156,7 +167,7 @@ impl TaskManager {
         id: &str,
         status: TaskStatus,
         notes: Option<String>,
-    ) -> Result<Task, anyhow::Error> {
+    ) -> Result<UpdateTaskResponse, anyhow::Error> {
         let start_time = Instant::now();
         let mut list = self
             .storage
@@ -246,7 +257,34 @@ impl TaskManager {
         log_entry.event_type = event_type.to_string();
         let _ = self.storage.append_log(&log_entry);
 
-        Ok(updated_task)
+        let total_tasks = list.tasks.len();
+        let completed_tasks = list
+            .tasks
+            .iter()
+            .filter(|t| t.status == TaskStatus::Completed)
+            .count();
+        let is_all_completed = total_tasks > 0 && completed_tasks == total_tasks;
+
+        let next_task = if is_all_completed {
+            None
+        } else {
+            list.tasks
+                .iter()
+                .find(|t| t.status == TaskStatus::InProgress)
+                .or_else(|| {
+                    list.tasks
+                        .iter()
+                        .find(|t| t.status == TaskStatus::Failed && t.retry_count < 3)
+                })
+                .or_else(|| list.tasks.iter().find(|t| t.status == TaskStatus::Pending))
+                .cloned()
+        };
+
+        Ok(UpdateTaskResponse {
+            task: updated_task,
+            next_task,
+            is_all_completed,
+        })
     }
 
     /// 全体進捗状況サマリーを取得
@@ -339,13 +377,17 @@ mod tests {
         let updated1 = manager
             .update_task_status("t1", TaskStatus::InProgress, Some("着手".to_string()))
             .unwrap();
-        assert_eq!(updated1.status, TaskStatus::InProgress);
+        assert_eq!(updated1.task.status, TaskStatus::InProgress);
+        assert_eq!(updated1.next_task.as_ref().unwrap().id, "t1");
+        assert!(!updated1.is_all_completed);
 
         // 4. t1 を Completed に更新
         let updated1_comp = manager
             .update_task_status("t1", TaskStatus::Completed, Some("完了".to_string()))
             .unwrap();
-        assert_eq!(updated1_comp.status, TaskStatus::Completed);
+        assert_eq!(updated1_comp.task.status, TaskStatus::Completed);
+        assert_eq!(updated1_comp.next_task.as_ref().unwrap().id, "t2");
+        assert!(!updated1_comp.is_all_completed);
 
         // 5. 次タスク取得 (t2 が取得される)
         let next2 = manager.get_next_task().unwrap();
@@ -359,21 +401,21 @@ mod tests {
         let fail1 = manager
             .update_task_status("t2", TaskStatus::Failed, Some("エラー1".to_string()))
             .unwrap();
-        assert_eq!(fail1.status, TaskStatus::Failed);
-        assert_eq!(fail1.retry_count, 1);
+        assert_eq!(fail1.task.status, TaskStatus::Failed);
+        assert_eq!(fail1.task.retry_count, 1);
 
         let fail2 = manager
             .update_task_status("t2", TaskStatus::Failed, Some("エラー2".to_string()))
             .unwrap();
-        assert_eq!(fail2.status, TaskStatus::Failed);
-        assert_eq!(fail2.retry_count, 2);
+        assert_eq!(fail2.task.status, TaskStatus::Failed);
+        assert_eq!(fail2.task.retry_count, 2);
 
         let fail3 = manager
             .update_task_status("t2", TaskStatus::Failed, Some("エラー3".to_string()))
             .unwrap();
         // 3回目で自動的に Blocked へ遷移
-        assert_eq!(fail3.status, TaskStatus::Blocked);
-        assert_eq!(fail3.retry_count, 3);
+        assert_eq!(fail3.task.status, TaskStatus::Blocked);
+        assert_eq!(fail3.task.retry_count, 3);
 
         // 7. 進捗サマリー確認
         let summary = manager.get_task_summary().unwrap();
