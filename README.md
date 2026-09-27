@@ -287,6 +287,20 @@ cargo clippy --all-targets -- -D warnings
 
 ---
 
+## 📜 更新履歴 (Changelog)
+
+### 0.1.0 (2026-09-27)
+- **初回正式リリース (Initial Release)**
+  - 厳格な一直線パイプライン（Strict Linear Pipeline）によるスキップ・飛び越えの物理遮断
+  - シングルアクティブ制約（同時進行タスクを常に1つに制限）
+  - サーキットブレーカー（同一タスク3回連続失敗時の自動中断と人間介入復旧）
+  - ローカル透過アトミック永続化（`.agents/tasks.json`）およびリアルタイム監査追記ログ（`.agents/tasks.log.jsonl`）
+  - ゼロ・エクストラターン設計（`create_task_list` および `update_task_status` での次タスク自動返却）
+  - stdio 通信保護（ログの stderr 隔離）
+  - Apache License 2.0 の採用
+
+---
+
 ## 📄 ライセンス (License)
 
 本プロジェクトは **[Apache License, Version 2.0](LICENSE)** の下で公開されています。
