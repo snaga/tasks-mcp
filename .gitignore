@@ -8,6 +8,7 @@ GEMINI.md
 /.agent/
 /.gemini/
 /.claude/
+/.workspace_cache/
 
 # 非公開開発作業領域
 /doc_internal/
