@@ -1,6 +1,11 @@
-# Rust ビルド成果物
+# Rust ビルド成果物 & パッケージ
 /target/
+/dist/
 **/*.rs.bk
+
+# ローカルスクリプト
+*.bat
+
 
 # AI エージェント & プライベート設定
 AGENTS.md
