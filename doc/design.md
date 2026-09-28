@@ -152,6 +152,8 @@
    - MCP プロトコルハンドラー層 (`src/mcp`) とタスク管理・ガードレール層 (`src/task`) を明確に分離。将来 CLI ツールや HTTP サーバーとして再利用する場合でも、`src/task` のコアロジックを1行も変更せずに再利用可能とする。
 5. **モジュール境界の意図永続化 (L1 Intent)**:
    - `src/mcp/README.md` および `src/task/README.md` を配置し、各パッケージの責務・依存制約・設計理由を永続化する。
+6. **ツール出力・メッセージの英語統一 (English-First Output for Tool Responses)**:
+   - MCPツールが返却するレスポンスメッセージ（`message`）、進捗テキストサマリー（`formatted_summary`）、ガードレール違反時およびエラー時のガイダンスメッセージ（`guidance_message`）、およびログメッセージはすべて**英語に統一**する。LLM（AIエージェント）の指示追従性とトークン効率を最大化し、多様なクライアント環境との決定論的互換性を担保する（※仕様書や設計ドキュメント等の開発者向け文書は日本語での記述を維持）。
 
 ### 3.2 全体構成図
 
@@ -341,7 +343,7 @@ flowchart LR
       "status": "pending",
       "retry_count": 0
     },
-    "message": "タスクリストが正常に初期化されました。最初のタスク 'task-1' に着手してください。"
+    "message": "Task list initialized successfully. Please proceed with the first task 'task-1'."
   }
   ```
 
@@ -401,7 +403,7 @@ flowchart LR
       "retry_count": 0
     },
     "is_all_completed": false,
-    "message": "タスク 'task-1' を完了しました。次のタスク 'task-2' に着手してください。"
+    "message": "Task 'task-1' completed. Please proceed to the next task 'task-2'."
   }
   ```
   *(注: 全タスク完了時は `next_task: null` かつ `is_all_completed: true`、`in_progress` や `failed` への遷移時は `next_task: null` または現在最前のタスクを返却)*
@@ -422,7 +424,7 @@ flowchart LR
       { "id": "task-1", "title": "要件確認", "status": "completed" },
       { "id": "task-2", "title": "コア実装", "status": "in_progress" }
     ],
-    "formatted_summary": "進捗状況: 1/2 (50.0%)\n進行中: [task-2] コア実装\n残り: 1 件"
+    "formatted_summary": "Progress: 1/2 (50.0%)\nIn Progress: [task-2] コア実装\nRemaining: 1 task(s)"
   }
   ```
 
@@ -658,13 +660,13 @@ stateDiagram-v2
 
 エージェントが制約に違反した場合、単なる内部エラーではなく、**「何が違反しており、エージェントが次に何をすべきか」を教示するガイダンスメッセージ** を返却する。
 
-| エラー種別 | ガードレール違反理由 | エージェントへの誘導メッセージ |
+| エラー種別 | ガードレール違反理由 | エージェントへの誘導メッセージ (英語) |
 |:---|:---|:---|
-| `MultipleActiveTasks` | 別のタスクがすでに `in_progress` である | 「タスク '{current_id}' が既に進行中です。新しいタスクを開始する前に、現在のタスクを完了（completed）させてください。」 |
-| `PredecessorNotCompleted` | 先行タスクが完了していない（スキップ試行） | 「先行タスク '{prev_id}' が完了していません。リストの順番通りに前のタスクから完了させてください。」 |
-| `CircuitBreakerHalted` | 同一タスクが3回失敗した | 「タスク '{task_id}' は3回失敗したため実行中断（blocked）されました。これ以上の自動リトライはできません。人間に支援を求めてください。」 |
-| `DuplicateTaskId` | 初期化時にIDが重複している | 「タスクID '{task_id}' が重複しています。一意なIDでタスクリストを作成し直してください。」 |
-| `TaskNotFound` | 指定されたIDが存在しない | 「タスクID '{task_id}' は存在しません。有効なタスクIDを指定してください。」 |
+| `MultipleActiveTasks` | 別のタスクがすでに `in_progress` である | "Task '{current_id}' is already in progress. Please complete the current task before starting a new one." |
+| `PredecessorNotCompleted` | 先行タスクが完了していない（スキップ試行） | "Predecessor task '{prev_id}' is not completed. Please complete preceding tasks in sequential order." |
+| `CircuitBreakerHalted` | 同一タスクが3回失敗した | "Task '{task_id}' failed {retry_count} times and has been blocked. Automatic retry is stopped. Please ask for human assistance." |
+| `DuplicateTaskId` | 初期化時にIDが重複している | "Task ID '{task_id}' is duplicated. Please re-create the task list with unique IDs." |
+| `TaskNotFound` | 指定されたIDが存在しない | "Task ID '{task_id}' does not exist. Please specify a valid task ID." |
 
 ---
 

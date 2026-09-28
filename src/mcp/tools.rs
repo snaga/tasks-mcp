@@ -135,10 +135,10 @@ impl ToolsHandler {
         let next_task = list.tasks.first().cloned();
         let message = match &next_task {
             Some(t) => format!(
-                "タスクリストが正常に初期化されました。最初のタスク '{}' に着手してください。",
+                "Task list initialized successfully. Please proceed with the first task '{}'.",
                 t.id
             ),
-            None => "タスクリストが正常に初期化されました。".to_string(),
+            None => "Task list initialized successfully.".to_string(),
         };
 
         Ok(json!({
@@ -177,18 +177,18 @@ impl ToolsHandler {
         let res = self.manager.update_task_status(id, status, notes)?;
 
         let message = if res.is_all_completed {
-            "全タスクが完了しました！お疲れ様でした。".to_string()
+            "All tasks have been completed successfully!".to_string()
         } else if status == TaskStatus::Completed {
             if let Some(ref next) = res.next_task {
                 format!(
-                    "タスク '{}' を完了しました。次のタスク '{}' に着手してください。",
+                    "Task '{}' completed. Please proceed to the next task '{}'.",
                     id, next.id
                 )
             } else {
-                "タスクステータスを正常に更新しました。".to_string()
+                "Task status updated successfully.".to_string()
             }
         } else {
-            "タスクステータスを正常に更新しました。".to_string()
+            "Task status updated successfully.".to_string()
         };
 
         Ok(json!({
@@ -256,7 +256,7 @@ mod tests {
         assert!(res_create["message"]
             .as_str()
             .unwrap()
-            .contains("最初のタスク 't1' に着手してください。"));
+            .contains("Please proceed with the first task 't1'."));
 
         // 2. get_next_task -> t1
         let res_next = handler.call_tool("get_next_task", json!({})).unwrap();
@@ -309,7 +309,7 @@ mod tests {
         assert!(res_update2["message"]
             .as_str()
             .unwrap()
-            .contains("次のタスク 't2' に着手してください。"));
+            .contains("Please proceed to the next task 't2'."));
 
         // 6. get_task_summary
         let res_summary = handler.call_tool("get_task_summary", json!({})).unwrap();

@@ -37,7 +37,7 @@ impl GuardrailError {
         match self {
             Self::MultipleActiveTasks { current_active_id } => {
                 format!(
-                    "タスク '{current_active_id}' が既に進行中です。新しいタスクを開始する前に、現在のタスクを完了（completed）させてください。"
+                    "Task '{current_active_id}' is already in progress. Please complete the current task before starting a new one."
                 )
             }
             Self::PredecessorNotCompleted {
@@ -46,7 +46,7 @@ impl GuardrailError {
                 current_id: _,
             } => {
                 format!(
-                    "先行タスク '{predecessor_id}' が完了していません。リストの順番通りに前のタスクから完了させてください。"
+                    "Predecessor task '{predecessor_id}' is not completed. Please complete preceding tasks in sequential order."
                 )
             }
             Self::CircuitBreakerHalted {
@@ -54,7 +54,7 @@ impl GuardrailError {
                 retry_count,
             } => {
                 format!(
-                    "タスク '{task_id}' は{retry_count}回失敗したため実行中断（blocked）されました。これ以上の自動リトライはできません。人間に支援を求めてください。"
+                    "Task '{task_id}' failed {retry_count} times and has been blocked. Automatic retry is stopped. Please ask for human assistance."
                 )
             }
         }
@@ -89,14 +89,14 @@ impl TaskListError {
         match self {
             Self::DuplicateTaskId { task_id } => {
                 format!(
-                    "タスクID '{task_id}' が重複しています。一意なIDでタスクリストを作成し直してください。"
+                    "Task ID '{task_id}' is duplicated. Please re-create the task list with unique IDs."
                 )
             }
             Self::EmptyTaskList => {
-                "タスクリストが空です。少なくとも1つのタスクを含めて作成してください。".to_string()
+                "Task list cannot be empty. Please include at least one task.".to_string()
             }
             Self::TaskNotFound { task_id } => {
-                format!("タスクID '{task_id}' は存在しません。有効なタスクIDを指定してください。")
+                format!("Task ID '{task_id}' does not exist. Please specify a valid task ID.")
             }
         }
     }
@@ -128,7 +128,7 @@ mod tests {
             current_active_id: "task-1".to_string(),
         };
         assert!(err1.to_string().contains("task-1"));
-        assert!(err1.guidance_message().contains("タスク 'task-1' が既に進行中です"));
+        assert!(err1.guidance_message().contains("is already in progress"));
 
         let err2 = GuardrailError::PredecessorNotCompleted {
             predecessor_id: "task-1".to_string(),
@@ -137,7 +137,7 @@ mod tests {
         };
         assert!(err2.to_string().contains("task-1"));
         assert!(err2.to_string().contains("task-2"));
-        assert!(err2.guidance_message().contains("先行タスク 'task-1' が完了していません"));
+        assert!(err2.guidance_message().contains("is not completed"));
 
         let err3 = GuardrailError::CircuitBreakerHalted {
             task_id: "task-1".to_string(),
@@ -145,7 +145,7 @@ mod tests {
         };
         assert!(err3.to_string().contains("task-1"));
         assert!(err3.to_string().contains("3"));
-        assert!(err3.guidance_message().contains("タスク 'task-1' は3回失敗したため実行中断"));
+        assert!(err3.guidance_message().contains("has been blocked"));
     }
 
     #[test]
@@ -154,17 +154,17 @@ mod tests {
             task_id: "task-dup".to_string(),
         };
         assert!(err1.to_string().contains("task-dup"));
-        assert!(err1.guidance_message().contains("タスクID 'task-dup' が重複しています"));
+        assert!(err1.guidance_message().contains("is duplicated"));
 
         let err2 = TaskListError::EmptyTaskList;
         assert_eq!(err2.to_string(), "Task list cannot be empty");
-        assert!(err2.guidance_message().contains("タスクリストが空です"));
+        assert!(err2.guidance_message().contains("cannot be empty"));
 
         let err3 = TaskListError::TaskNotFound {
             task_id: "task-999".to_string(),
         };
         assert!(err3.to_string().contains("task-999"));
-        assert!(err3.guidance_message().contains("タスクID 'task-999' は存在しません"));
+        assert!(err3.guidance_message().contains("does not exist"));
     }
 
     #[test]

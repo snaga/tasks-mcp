@@ -172,7 +172,7 @@ impl TaskManager {
         let mut list = self
             .storage
             .load()?
-            .ok_or_else(|| anyhow::anyhow!("タスクリストが初期化されていません。先に create_task_list を実行してください。"))?;
+            .ok_or_else(|| anyhow::anyhow!("Task list is not initialized. Please run create_task_list first."))?;
 
         let target_index = list.find_index(id).ok_or_else(|| {
             anyhow::anyhow!(TaskListError::TaskNotFound {
@@ -311,11 +311,11 @@ impl TaskManager {
         let remaining_tasks = total_tasks.saturating_sub(completed_tasks);
         let active_desc = match current_active_task {
             Some(t) => format!("[{}] {}", t.id, t.title),
-            None => "なし".to_string(),
+            None => "None".to_string(),
         };
 
         let formatted_summary = format!(
-            "進捗状況: {}/{} ({:.1}%)\n進行中: {}\n残り: {} 件",
+            "Progress: {}/{} ({:.1}%)\nIn Progress: {}\nRemaining: {} task(s)",
             completed_tasks, total_tasks, progress_percent, active_desc, remaining_tasks
         );
 
